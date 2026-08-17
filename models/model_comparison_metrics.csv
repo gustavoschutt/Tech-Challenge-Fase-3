@@ -1,0 +1,4 @@
+Modelo,CV ROC-AUC (Média ± DP),CV F1-Score,Teste ROC-AUC,Teste F1-Score,Teste Precision,Teste Recall,Teste Balanced Acc,Teste Accuracy
+Regressão Logística (Baseline),0.9759 ± 0.0029,0.9485,0.9774,0.9529,0.9947,0.9145,0.9291,0.9168
+Random Forest Classifier,0.9748 ± 0.0033,0.9597,0.9758,0.9649,0.9928,0.9386,0.9298,0.9372
+Gradient Boosting Classifier,0.9721 ± 0.0033,0.9737,0.9753,0.9722,0.9618,0.9828,0.7658,0.9482

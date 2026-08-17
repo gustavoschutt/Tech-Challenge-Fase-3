@@ -1,0 +1,43 @@
+Feature,Nome_Original,Mean_Abs_SHAP
+Indicador Ano Anterior (t-1),indicador_lag1,2.032499978184545
+Gap vs Meta Nacional,gap_historico_vs_meta_nacional,0.4077506013180551
+Meta Municipal Pactuada,meta_municipio,0.15167490094379757
+Indicador 2 Anos Anteriores (t-2),indicador_lag2,0.06014849889744909
+Gap vs Meta Municipal,gap_historico_vs_meta_municipio,0.042224219197918446
+Tendência Histórica (t-1 - t-2),tendencia_historica,0.03368581004180202
+Volume de Matrículas,quantidade_matriculas,0.032430797633423956
+Índice de Desenv. Humano (IDHM),IDHM,0.02977370336751223
+PIB per capita Municipal,PIB_per_capita,0.02957388163357907
+Região: Sul,regiao_Sul,0.006040640378451893
+Região: Centro-Oeste,regiao_Centro-Oeste,0.005357067378094722
+UF: RO,sigla_uf_RO,0.004511094794772683
+UF: RR,sigla_uf_RR,0.004296674537377511
+UF: DF,sigla_uf_DF,0.0042882520194447975
+UF: RN,sigla_uf_RN,0.004287900266642247
+UF: MT,sigla_uf_MT,0.002789112114282755
+UF: BA,sigla_uf_BA,0.002553573563172215
+UF: MA,sigla_uf_MA,0.0025246988350289016
+UF: AM,sigla_uf_AM,0.002131436864709746
+Região: Nordeste,regiao_Nordeste,0.002118944130233934
+UF: RJ,sigla_uf_RJ,0.002102886547344774
+UF: PE,sigla_uf_PE,0.001967825501041398
+UF: RS,sigla_uf_RS,0.0018617185664293262
+Região: Norte,regiao_Norte,0.0016540376736559168
+UF: PI,sigla_uf_PI,0.001454454999167014
+UF: AC,sigla_uf_AC,0.0013492943789362602
+UF: AP,sigla_uf_AP,0.0013420376695747385
+Região: Sudeste,regiao_Sudeste,0.0013020612192525558
+UF: PA,sigla_uf_PA,0.0012802596790383025
+UF: MS,sigla_uf_MS,0.0012687771817414411
+UF: CE,sigla_uf_CE,0.001259402278445503
+UF: SC,sigla_uf_SC,0.0011541993923869665
+Meta Nacional Brasil,meta_nacional,0.0010374039510970263
+UF: TO,sigla_uf_TO,0.00099100031171568
+UF: MG,sigla_uf_MG,0.0009452476835111247
+UF: SP,sigla_uf_SP,0.0008024803583230649
+UF: AL,sigla_uf_AL,0.0007365660156251165
+UF: PB,sigla_uf_PB,0.0006535679097137246
+UF: GO,sigla_uf_GO,0.0006163752420988823
+UF: ES,sigla_uf_ES,0.0006018083749665147
+UF: SE,sigla_uf_SE,0.00039449545278241526
+UF: PR,sigla_uf_PR,0.0003647336793228421
