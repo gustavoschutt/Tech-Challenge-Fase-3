@@ -171,7 +171,7 @@
       border: 1px solid #3b82f6;
     }
     .metric-value {
-      font-size: 2.4rem;
+      font-size: 2.3rem;
       font-weight: 900;
       color: var(--accent-green);
       line-height: 1;
@@ -206,17 +206,17 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       text-align: left;
     }
     th {
       background: #0284c7;
       color: white;
-      padding: 10px 12px;
+      padding: 9px 10px;
       font-weight: 700;
     }
     td {
-      padding: 10px 12px;
+      padding: 9px 10px;
       border-bottom: 1px solid var(--border-color);
       color: #e2e8f0;
     }
@@ -295,7 +295,7 @@
         <ul>
           <li>Antecipação de riscos para o Ministério da Educação (MEC).</li>
           <li>Direcionamento de recursos e apoio técnico prioritário (FUNDEB).</li>
-          <li>Tomada de decisão orientada por dados de mais de 5.500 municípios.</li>
+          <li>Tomada de decisão orientada por dados de 5.570 municípios.</li>
         </ul>
       </div>
     </div>
@@ -304,8 +304,8 @@
   <!-- SLIDE 2 -->
   <div class="slide" id="slide-2">
     <div class="slide-header">
-      <div class="slide-subtitle">Engenharia de Dados e Metodologia</div>
-      <h2>Camada Gold & Blindagem contra Data Leakage</h2>
+      <div class="slide-subtitle">Engenharia de Dados e Metodologia Rigorosa</div>
+      <h2>Partição Temporal & Blindagem Total contra Data Leakage</h2>
     </div>
     
     <div class="grid-2">
@@ -320,13 +320,13 @@
       </div>
 
       <div class="card">
-        <h3>🛡️ Pipeline Scikit-Learn (Zero Leakage)</h3>
-        <p style="margin-bottom: 12px;">Isolamento estrito entre o passado preditor e o alvo no ano $t$.</p>
+        <h3>🛡️ Pipeline Scikit-Learn & Divisão Temporal</h3>
+        <p style="margin-bottom: 12px;">Garantia de <strong>Zero Data Leakage</strong> (direto, temporal e de grupo):</p>
         <ul>
-          <li><code>ColumnTransformer</code> integrado de ponta a ponta.</li>
-          <li>Imputação estatística pela mediana e moda com <code>SimpleImputer</code>.</li>
-          <li>Padronização (<code>StandardScaler</code>) e codificação (<code>OneHotEncoder</code>).</li>
-          <li>Divisão Holdout estratificada: 80% Treino (13.368) e 20% Teste (3.342).</li>
+          <li><code>ColumnTransformer</code> integrado (Imputação, Scaler e Encoder).</li>
+          <li><strong>Partição Temporal Estrita:</strong> Treino em 2022-2023 (11.140 amostras) e Teste Holdout em 2024 (5.570 amostras).</li>
+          <li><code>StratifiedGroupKFold</code> agrupado por município na validação cruzada.</li>
+          <li>Exclusão total de variáveis do ano corrente ($t$) do vetor $X$.</li>
         </ul>
       </div>
     </div>
@@ -335,61 +335,61 @@
   <!-- SLIDE 3 -->
   <div class="slide" id="slide-3">
     <div class="slide-header">
-      <div class="slide-subtitle">Resultados Experimentais</div>
-      <h2>Comparação de Modelos & Validação Cruzada (5-Folds)</h2>
+      <div class="slide-subtitle">Resultados Experimentais no Holdout 2024</div>
+      <h2>Comparação de Modelos com Otimização (GridSearchCV)</h2>
     </div>
     
     <div class="grid-2">
       <div style="flex: 1;">
-        <table style="margin-bottom: 15px;">
+        <table style="margin-bottom: 12px;">
           <thead>
             <tr>
               <th>Modelo</th>
-              <th>CV ROC-AUC</th>
+              <th>CV Bal Acc</th>
               <th>ROC-AUC Teste</th>
-              <th>F1-Score</th>
-              <th>Acurácia</th>
+              <th>Recall Risco (0)</th>
+              <th>Bal Acc Teste</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Regressão Logística</td>
-              <td>0.9759</td>
-              <td>0.9774</td>
-              <td>0.9529</td>
-              <td>91.68%</td>
-            </tr>
-            <tr>
-              <td>Random Forest</td>
-              <td>0.9748</td>
-              <td>0.9758</td>
-              <td>0.9649</td>
-              <td>93.72%</td>
-            </tr>
             <tr class="highlight-row">
-              <td>Gradient Boosting (🏆)</td>
-              <td>0.9721</td>
-              <td>0.9753</td>
-              <td>0.9722</td>
-              <td>94.82%</td>
+              <td>Regressão Logística (🏆)</td>
+              <td>0.9221</td>
+              <td>0.9827</td>
+              <td>95.21%</td>
+              <td>94.51%</td>
+            </tr>
+            <tr>
+              <td>Random Forest (Otimizado)</td>
+              <td>0.9196</td>
+              <td>0.9809</td>
+              <td>96.06%</td>
+              <td>94.49%</td>
+            </tr>
+            <tr>
+              <td>HistGradientBoosting</td>
+              <td>0.9149</td>
+              <td>0.9811</td>
+              <td>92.96%</td>
+              <td>93.24%</td>
             </tr>
           </tbody>
         </table>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="metric-box">
-            <div class="metric-value">97.5%</div>
-            <div class="metric-label">ROC-AUC Teste</div>
+            <div class="metric-value">98.3%</div>
+            <div class="metric-label">ROC-AUC Holdout 2024</div>
           </div>
           <div class="metric-box">
-            <div class="metric-value">98.3%</div>
-            <div class="metric-label">Recall no Teste</div>
+            <div class="metric-value">95.2%</div>
+            <div class="metric-label">Recall de Municípios em Risco</div>
           </div>
         </div>
       </div>
 
       <div class="img-container">
-        <img src="images/04_roc_curves_comparison.png" alt="Curvas ROC">
+        <img src="images/04_roc_curves_comparison.png" alt="Curvas ROC Comparativas">
       </div>
     </div>
   </div>
@@ -398,17 +398,17 @@
   <div class="slide" id="slide-4">
     <div class="slide-header">
       <div class="slide-subtitle">Explicabilidade e Transparência (XAI)</div>
-      <h2>Interpretabilidade com SHAP (TreeExplainer)</h2>
+      <h2>Interpretabilidade com SHAP Values (TreeExplainer)</h2>
     </div>
     
     <div class="grid-2">
       <div class="card">
         <h3>🔍 Fatores Determinantes na Alfabetização</h3>
         <ul>
-          <li><strong>1º Inércia Histórica ($\text{Lag}_1$):</strong> Maior peso absoluto ($\text{SHAP} = 2.03$). A alfabetização é um processo cumulativo da rede.</li>
-          <li><strong>2º Gap vs Meta Nacional:</strong> Redes já alinhadas à meta federal apresentam maior estabilidade.</li>
-          <li><strong>3º Meta Municipal Pactuada:</strong> Metas irrealistas aumentam o risco de frustração.</li>
-          <li><strong>4º IDHM & PIB per capita:</strong> Estrutura socioeconômica atua como escudo protetor contra o abandono escolar.</li>
+          <li><strong>1º Inércia Histórica ($\text{Lag}_1$):</strong> Maior peso absoluto ($\text{SHAP} = 0.174$). O desempenho escolar pretérito é a base da trajetória.</li>
+          <li><strong>2º Gap vs Meta Nacional:</strong> Margem de segurança frente à régua do MEC.</li>
+          <li><strong>3º Meta Municipal Pactuada:</strong> Metas descoladas da capacidade real elevam a vulnerabilidade.</li>
+          <li><strong>4º IDHM Municipal:</strong> Efeito protetor não-linear contra quedas de aprendizado.</li>
         </ul>
       </div>
 
@@ -422,7 +422,7 @@
   <div class="slide" id="slide-5">
     <div class="slide-header">
       <div class="slide-subtitle">Inteligência Aplicada à Tomada de Decisão</div>
-      <h2>Quadrante de Risco & Ações para Políticas Públicas</h2>
+      <h2>Quadrante de Risco, Clusters e Ações Governamentais</h2>
     </div>
     
     <div class="grid-2">
@@ -431,8 +431,8 @@
       </div>
 
       <div class="card">
-        <h3>🚨 585 Municípios no Quadrante Crítico</h3>
-        <p style="margin-bottom: 10px;">Municípios com taxa histórica $< 50\%$ e tendência negativa ($\Delta < 0$). Risco predito de falha superior a <strong>85%</strong>.</p>
+        <h3>🚨 Diagnóstico de Vulnerabilidade (355 Municípios em Risco)</h3>
+        <p style="margin-bottom: 10px;">Identificação de redes municipais com histórico $< 50\%$ e tendência de queda. Detecção de 4 perfis socioeconômicos via clustering K-Means.</p>
         
         <h3 style="margin-top: 10px;">🏛️ Recomendações para MEC / FUNDEB</h3>
         <ul>
@@ -453,18 +453,18 @@
     
     <div class="grid-3">
       <div class="card" style="text-align: center;">
-        <h3 style="justify-content: center;">🏆 Excelência Técnica</h3>
-        <p>Pipeline Scikit-Learn robusto, 100% livre de Data Leakage, validado em 5 folds com 94.8% de acurácia.</p>
+        <h3 style="justify-content: center;">🏆 Excelência Metodológica</h3>
+        <p>Partição Temporal (2022-2023 treino, 2024 teste), StratifiedGroupKFold e 95.2% de Recall na detecção de risco.</p>
       </div>
 
       <div class="card" style="text-align: center;">
-        <h3 style="justify-content: center;">🧠 Transparência (XAI)</h3>
-        <p>Explicabilidade total via SHAP Values para auditoria pública de decisões em todos os municípios.</p>
+        <h3 style="justify-content: center;">🧠 Transparência Total (XAI)</h3>
+        <p>Explicabilidade global e local via SHAP Values (Beeswarm, Bar, Dependence e Waterfall).</p>
       </div>
 
       <div class="card" style="text-align: center;">
         <h3 style="justify-content: center;">📊 Impacto Social Real</h3>
-        <p>Transformação de dados brutos da Camada Gold em inteligência preventiva para o futuro da educação no Brasil.</p>
+        <p>Transformação de dados brutos da Camada Gold em inteligência preventiva para o futuro da educação básica.</p>
       </div>
     </div>
 

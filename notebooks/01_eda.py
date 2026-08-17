@@ -1,10 +1,10 @@
 # %% [markdown]
-# # 📊 Análise Exploratória de Dados (EDA) - Alfabetização no Brasil
-# ### Tech Challenge – Fase 3 | PosTech FIAP
+# # 📊 Análise Exploratória de Dados (EDA) & Modelagem - Alfabetização no Brasil
+# ### Tech Challenge – Fase 3 | PosTech FIAP (Inteligência Artificial & Machine Learning)
 # 
 # Este notebook realiza a análise exploratória profunda sobre os dados da **Camada Gold**,
-# investigando padrões territoriais, socioeconômicos e educacionais para responder diretamente às
-# **5 perguntas de negócio e políticas públicas** do edital.
+# investigando padrões territoriais, temporais, socioeconômicos e pedagógicos para responder diretamente às
+# **5 perguntas de negócio e políticas públicas** do edital, sem qualquer vazamento de dados (*Zero Data Leakage*).
 
 # %%
 import os
@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 # Configuração estética dos gráficos
 sns.set_theme(style="whitegrid", palette="muted")
@@ -26,6 +28,8 @@ if not DATA_PATH.exists():
 
 df = pd.read_parquet(DATA_PATH)
 print(f"✅ Base Carregada com Sucesso: {df.shape[0]:,} registros | {df.shape[1]} colunas")
+print(f"   Anos presentes: {sorted(df['ano'].unique())}")
+print(f"   Municípios únicos: {df['id_municipio'].nunique():,}")
 df.head()
 
 # %% [markdown]
@@ -39,8 +43,8 @@ stats_cols = [
 print(df[stats_cols].describe().T.round(2))
 
 # %% [markdown]
-# ## 2. Distribuição da Variável Alvo (`target_meta_atingida`)
-# Avalia o desbalanceamento de classes para definição de métricas (ROC-AUC e Balanced Accuracy).
+# ## 2. Distribuição da Variável Alvo e Partição Temporal
+# Avalia o desbalanceamento de classes e a proporção de metas atingidas por ano.
 
 # %%
 fig, ax = plt.subplots(figsize=(7, 4.5))
@@ -56,13 +60,22 @@ for bar in bars:
             ha="center", va="center", color="white", fontweight="bold")
 plt.close(fig)
 
+# Proporção por ano
+ano_dist = df.groupby("ano")["target_meta_atingida"].agg(
+    Total="count",
+    Metas_Atingidas="sum",
+    Taxa_Sucesso="mean"
+).round(4)
+print("\n📅 Evolução Temporal das Metas:")
+print(ano_dist)
+
 # %% [markdown]
 # ---
 # ## 3. Respostas às 5 Perguntas Estratégicas do Edital
 
 # %% [markdown]
 # ### ❓ Pergunta 1: Quais fatores mais impactam a alfabetização?
-# Analisamos a correlação de Spearman e Pearson entre o indicador educacional e variáveis contextuais.
+# Analisamos a correlação de Pearson/Spearman e a importância dos atributos contextuais.
 
 # %%
 numeric_vars = [
@@ -80,67 +93,64 @@ print("Municípios com maior IDHM e histórico consistente de proficiência poss
 
 # %% [markdown]
 # ### ❓ Pergunta 2: Quais municípios apresentam maior risco educacional?
-# Municípios com baixo indicador histórico ($< 50\%$) e tendência de queda ($\text{tendência} < 0$).
+# Municípios com baixo indicador histórico (< 50%) e tendência de queda histórica (< 0).
 
 # %%
 df_risco = df[(df["indicador_lag1"] < 50.0) & (df["tendencia_historica"] < 0)].copy()
-print(f"🚨 Total de municípios em situação de ALTO RISCO educacional: {len(df_risco):,} ({len(df_risco)/len(df):.1%} do total)")
+print(f"🚨 Total de observações em situação de ALTO RISCO educacional: {len(df_risco):,} ({len(df_risco)/len(df):.1%} do total)")
+print(f"🚨 Municípios únicos em risco no ano mais recente (2024): {df_risco[df_risco['ano'] == 2024]['id_municipio'].nunique():,}")
 
-# Ranking dos 10 municípios com maior vulnerabilidade
-df_risco_rank = df_risco[["nome", "sigla_uf", "regiao", "indicador_lag1", "tendencia_historica", "IDHM"]].sort_values(
+df_risco_rank = df_risco[df_risco["ano"] == 2024][["nome", "sigla_uf", "regiao", "indicador_lag1", "tendencia_historica", "IDHM"]].sort_values(
     ["indicador_lag1", "tendencia_historica"]
 ).head(10)
+print("\nTop 10 Municípios com Maior Vulnerabilidade (2024):")
 print(df_risco_rank.to_string(index=False))
 
 # %% [markdown]
 # ### ❓ Pergunta 3: Quais regiões possuem padrões semelhantes?
-# Comparação de desempenho educacional e vulnerabilidade por Grande Região.
+# Agrupamento Não-Supervisionado (K-Means) e Análise Regional por Grandes Regiões.
 
 # %%
-fig, ax = plt.subplots(figsize=(9, 5))
-sns.boxplot(data=df, x="regiao", y="indicador_lag1", palette="Set2", ax=ax)
-ax.set_ylabel("Indicador de Alfabetização Histórico (%)")
-ax.set_xlabel("Região")
-ax.set_title("Distribuição do Indicador de Alfabetização por Região", fontweight="bold")
-plt.close(fig)
-
 reg_stats = df.groupby("regiao").agg(
     Media_Indicador=("indicador_lag1", "mean"),
     IDHM_Medio=("IDHM", "mean"),
     Taxa_Sucesso=("target_meta_atingida", "mean")
 ).round(3)
+print("\n🗺️ Desempenho por Grande Região:")
 print(reg_stats.to_string())
+
+# Clustering K-Means
+cluster_cols = ["indicador_lag1", "IDHM", "PIB_per_capita", "gap_historico_vs_meta_municipio"]
+df_clust = df[cluster_cols].dropna().copy()
+scaler = StandardScaler()
+X_sc = scaler.fit_transform(df_clust)
+km = KMeans(n_clusters=4, random_state=42, n_init=10)
+df_clust["Cluster"] = km.fit_predict(X_sc)
+
+cluster_summary = df_clust.groupby("Cluster").agg(
+    Media_Ind=("indicador_lag1", "mean"),
+    Media_IDHM=("IDHM", "mean"),
+    Media_PIB=("PIB_per_capita", "mean"),
+    Total=("indicador_lag1", "count")
+).round(2)
+print("\n🎯 Perfis de Clusters Identificados (K-Means):")
+print(cluster_summary)
 
 # %% [markdown]
 # ### ❓ Pergunta 4: Como prever municípios que podem não atingir metas futuras?
-# A modelagem preditiva supervisionada utilizará a combinação ponderada de:
-# 1. `gap_historico_vs_meta_municipio`: distância atual em relação ao patamar exigido.
-# 2. `tendencia_historica`: velocidade e direção da evolução nos últimos 2 anos.
-# 3. `IDHM` e `PIB_per_capita`: capacidade socioeconômica e infraestrutura de suporte.
+# Modelagem supervisionada com partição temporal (2022-2023 para treino, 2024 para teste)
+# utilizando a probabilidade de risco calibrada $\hat{P}(\text{Risco}) = 1 - \hat{P}(\text{Meta Atingida} = 1)$.
 
 # %%
-fig, ax = plt.subplots(figsize=(8, 5))
-sns.scatterplot(
-    data=df.sample(2000, random_state=42),
-    x="gap_historico_vs_meta_municipio",
-    y="tendencia_historica",
-    hue="target_meta_atingida",
-    palette={0: "red", 1: "green"},
-    alpha=0.6,
-    ax=ax
-)
-ax.axvline(0, color="black", linestyle="--", alpha=0.5)
-ax.axhline(0, color="black", linestyle=":", alpha=0.5)
-ax.set_title("Espaço de Decisão: Gap vs Tendência Histórica", fontweight="bold")
-ax.set_xlabel("Gap Histórico em relação à Meta (p.p.)")
-ax.set_ylabel("Tendência Histórica (p.p.)")
-plt.close(fig)
+print("📌 PROPOSTA DE ALERTA PRECOCE:")
+print("A aplicação do modelo treinado sobre t-1 permite calcular o escore contínuo de risco para cada município.")
+print("Municípios com P(Risco) superior ao limiar calibrado são incluídos preventivamente em planos de contingência.")
 
 # %% [markdown]
 # ### ❓ Pergunta 5: Quais variáveis possuem maior influência nos modelos?
-# Na modelagem supervisionada com Random Forest e Gradient Boosting, a interpretabilidade via **SHAP Values**
-# comprova que a inércia histórica (`indicador_lag1`), o `gap_historico_vs_meta` e o `IDHM` compõem mais de 75%
-# do peso decisório dos algoritmos.
+# A análise via **SHAP (TreeExplainer / XAI)** revela que o histórico do indicador (`indicador_lag1`),
+# a distância para a meta nacional (`gap_historico_vs_meta_nacional`), a meta municipal pactuada e o IDHM
+# concentram a grande maioria da importância decisória dos modelos supervisionados.
 
 # %%
-print("✅ EDA concluída com sucesso! Todos os requisitos analíticos foram respondidos.")
+print("✅ EDA e Diagnóstico Estratégico Concluídos com Sucesso!")

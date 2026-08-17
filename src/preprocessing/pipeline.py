@@ -1,7 +1,7 @@
 """
 Módulo de Pré-processamento e Construção de Pipelines Scikit-Learn
 Implementa transformações robustas, tratamento de nulos, normalização e encoding
-garantindo ZERO Data Leakage para o modelo de Machine Learning.
+garantindo ZERO Data Leakage (direto e temporal) para o modelo de Machine Learning.
 """
 
 from pathlib import Path
@@ -76,27 +76,54 @@ def get_preprocessor() -> ColumnTransformer:
 def load_and_split_data(
     filepath: str | Path = "data/ml_features.parquet",
     target_col: str = "target_meta_atingida",
-) -> tuple[pd.DataFrame, pd.Series]:
+    temporal_split: bool = True,
+    train_years: list[int] | None = None,
+    test_year: int = 2024,
+) -> tuple[pd.DataFrame, pd.Series, pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
     """
-    Carrega os dados e separa a matriz de features X e o vetor de target y.
-    Garante que o target e variáveis vazadas não estejam em X.
+    Carrega os dados e realiza a partição temporal estrita:
+    - Treino: anos <= 2023 (11.140 instâncias)
+    - Teste Holdout: ano == 2024 (5.570 instâncias)
+    
+    Retorna:
+        X_train, y_train, groups_train, X_test, y_test, df_raw
     """
+    if train_years is None:
+        train_years = [2022, 2023]
+
     df = pd.read_parquet(filepath)
     
     # Validação do target
     if target_col not in df.columns:
         raise ValueError(f"Coluna alvo '{target_col}' não encontrada no dataset.")
     
-    # Remoção de colunas não-preditoras
     cols_to_drop = [c for c in EXCLUDE_COLUMNS if c in df.columns]
-    X = df.drop(columns=cols_to_drop)
-    y = df[target_col].astype(int)
 
-    return X, y
+    if temporal_split:
+        train_mask = df["ano"].isin(train_years)
+        test_mask = df["ano"] == test_year
+
+        df_train = df[train_mask].copy()
+        df_test = df[test_mask].copy()
+
+        X_train = df_train.drop(columns=cols_to_drop)
+        y_train = df_train[target_col].astype(int)
+        groups_train = df_train["id_municipio"]
+
+        X_test = df_test.drop(columns=cols_to_drop)
+        y_test = df_test[target_col].astype(int)
+
+        return X_train, y_train, groups_train, X_test, y_test, df
+    else:
+        X = df.drop(columns=cols_to_drop)
+        y = df[target_col].astype(int)
+        groups = df["id_municipio"]
+        return X, y, groups, pd.DataFrame(), pd.Series(dtype=int), df
 
 
 if __name__ == "__main__":
-    X, y = load_and_split_data()
-    print(f"✅ Dados carregados com sucesso!")
-    print(f"   X shape: {X.shape} | Features: {list(X.columns)}")
-    print(f"   y shape: {y.shape} | Taxa de classe positiva: {y.mean():.2%}")
+    X_train, y_train, groups_train, X_test, y_test, df = load_and_split_data()
+    print("✅ Partição Temporal e Blindagem contra Leakage Concluídas:")
+    print(f"   Treino (2022-2023): {X_train.shape[0]:,} amostras | Features: {X_train.shape[1]}")
+    print(f"   Grupos únicos de treino: {groups_train.nunique():,} municípios")
+    print(f"   Teste Holdout (2024): {X_test.shape[0]:,} amostras | Proporção Classe 1: {y_test.mean():.2%}")
