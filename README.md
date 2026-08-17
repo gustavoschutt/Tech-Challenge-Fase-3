@@ -280,3 +280,51 @@ python src/evaluation/shap_analysis.py
 # 5. Executar o notebook de EDA
 jupyter notebook notebooks/01_eda.ipynb
 ```
+
+---
+
+## 12. Procedimentos para Rodar Liso no VS Code
+
+O repositório conta com configuração nativa pré-definida em `.vscode/settings.json` para garantir uma experiência de desenvolvimento e execução direta (*plug and play*), sem atritos de ambiente ou erros de caminho.
+
+### 🛠️ Por que roda perfeitamente no VS Code:
+
+1. **Seleção Automática de Ambiente Virtual (`venv`)**:
+   - O arquivo `.vscode/settings.json` vincula automaticamente o interpretador Python do projeto (`./venv/bin/python`).
+   - Ao abrir qualquer terminal integrado no VS Code, o ambiente `(venv)` é ativado instantaneamente.
+   - O Jupyter Notebook (`notebooks/01_eda.ipynb`) conecta-se diretamente ao kernel configurado sem necessidade de seleção manual.
+
+2. **Blindagem contra Erros de Módulo (`ModuleNotFoundError`)**:
+   - Todos os scripts em `src/` utilizam resolução dinâmica de raiz via `pathlib.Path(__file__).resolve().parents[...]` inserida no `sys.path`.
+   - Você pode executar qualquer script usando o botão **▶️ Play (Run Python File)** do VS Code, independentemente do diretório de onde o comando for chamado.
+
+3. **Caminhos Relativos e Portabilidade**:
+   - Leitura da base Parquet (`data/`), gravação dos modelos serializados (`models/`) e salvamento dos gráficos executivos (`images/`) utilizam caminhos relativos ao `PROJECT_ROOT`, funcionando em qualquer máquina Linux, macOS ou Windows.
+
+---
+
+### 🚀 Como abrir e rodar no VS Code:
+
+#### 1. Abrir a pasta do projeto:
+No terminal, navegue até a pasta do projeto e abra o VS Code:
+```bash
+cd tech-challenge-fase3
+code .
+```
+
+#### 2. Executar o Treinamento e Otimização dos Modelos:
+- Abra o arquivo `src/modeling/train.py` e clique no botão **▶️ Play (Run Python File)** no canto superior direito (ou execute `python src/modeling/train.py` no terminal integrado).
+- O script executará o `GridSearchCV`, a validação temporal no Holdout de 2024 e gerará as métricas e modelos em `models/`.
+
+#### 3. Executar a Análise de Explicabilidade (XAI com SHAP):
+- Abra o arquivo `src/evaluation/shap_analysis.py` e clique no botão **▶️ Play**.
+- Serão gerados os gráficos de impacto global (Beeswarm), importância média, dependência não-linear, explicações locais e a triangulação com os coeficientes da Regressão Logística.
+
+#### 4. Executar o Notebook de Análise Exploratória (EDA):
+- Abra o arquivo `notebooks/01_eda.ipynb`.
+- Clique em **Run All** (ou `Ctrl + Shift + Enter` em cada célula). O VS Code utilizará o kernel do `venv` automaticamente.
+
+#### 5. Visualizar a Apresentação Executiva Interativa:
+- Clique com o botão direito em `Slides_Apresentacao_Fase3.html` e selecione **Open with Default Browser** (ou abra diretamente no Google Chrome / Firefox).
+- Pressione **F11** para tela cheia e navegue com as setas `←` / `→` do teclado.
+
