@@ -31,6 +31,8 @@ Os dados utilizados provêm da **Camada Gold** consolidada no BigQuery e exporta
    * **Teste Holdout**: Ano **2024** ($5.570$ instâncias), simulando o cenário real de predição do ano futuro a partir do passado.
 3. **Isolamento de Grupo na Validação Cruzada**: Na validação cruzada do treino, utiliza-se `StratifiedGroupKFold(n_splits=5, groups=id_municipio)`. Isso garante que todas as observações de um mesmo município fiquem estritamente no fold de treino ou no fold de validação, eliminando o risco de vazamento por autocorrelação intra-municipal.
 
+> **Nota sobre *Cold Start* dos Lags (Ano 2022):** As features `indicador_lag2` e `tendencia_historica` são nulas (`NaN`) para os registros do ano 2022, pois o primeiro ano da série não possui dados defasados em $t-2$. Esse comportamento é esperado e tratado automaticamente pelo `SimpleImputer(strategy='median')` na pipeline de pré-processamento, que substitui os valores ausentes pela mediana do conjunto de treino sem introduzir viés informacional. O impacto na predição é negligível, dado que o ano 2022 compõe apenas o conjunto de treino e a feature principal (`indicador_lag1`) está 100% preenchida.
+
 ### Dicionário de Features Preditoras:
 
 | Variável | Tipo | Descrição | Papel no Modelo |
@@ -89,6 +91,12 @@ Utilizando o `TreeExplainer` no modelo de ensemble de árvores otimizado, realiz
 ![SHAP Bar Importance](images/07_shap_bar_importance.png)
 ![SHAP Dependence Plot](images/08_shap_dependence_plot.png)
 ![SHAP Local Waterfall](images/09_shap_local_waterfall.png)
+
+### Triangulação com Coeficientes da Regressão Logística Campeã
+
+Para complementar os SHAP Values (calculados sobre o ensemble de árvores), extraímos e plotamos os **coeficientes padronizados da Regressão Logística** — o modelo efetivamente selecionado como campeão. A convergência entre ambas as métricas confirma a robustez da interpretação:
+
+![Coeficientes Logísticos](images/10_logistic_coefficients.png)
 
 ### Ranking dos Fatores Determinantes (Top 10):
 
@@ -188,9 +196,11 @@ tech-challenge-fase3/
 │   ├── 08_shap_dependence_plot.png
 │   ├── 08_threshold_tuning.png
 │   ├── 09_shap_local_waterfall.png
-│   └── 09_unsupervised_clusters.png
+│   ├── 09_unsupervised_clusters.png
+│   └── 10_logistic_coefficients.png
 ├── reports/
-│   └── shap_feature_importance.csv           # Ranking de importância SHAP
+│   ├── shap_feature_importance.csv           # Ranking de importância SHAP
+│   └── logistic_coefficients.csv             # Coeficientes padronizados do modelo campeão
 ├── requirements.txt                          # Dependências com versões fixas
 ├── LICENSE                                   # Licença MIT
 └── README.md                                 # Documentação executiva completa
@@ -198,7 +208,61 @@ tech-challenge-fase3/
 
 ---
 
-## 9. Como Reproduzir o Projeto
+## 9. Limitações e Trabalhos Futuros
+
+### Limitações Conhecidas
+
+1. **Horizonte de Predição de 1 Ano**: O modelo opera com *one-step-ahead prediction*. Previsões para 2+ anos exigiriam abordagens autorregressivas ou modelos sequenciais.
+2. **Ausência de Variáveis de Investimento Público**: Dados de gasto per aluno, número de professores por turma e infraestrutura escolar (laboratórios, bibliotecas) não estão disponíveis na Camada Gold atual. Sua inclusão potencialmente melhoraria o poder explicativo.
+3. **Premissa de Estacionariedade**: O modelo assume que as relações entre features e target permanecem relativamente estáveis ao longo do tempo. Choques exógenos (ex: pandemia, mudanças curriculares abruptas) podem requerer recalibração.
+4. **Granularidade Municipal**: Heterogeneidade intra-municipal (ex: zonas rural vs urbana) não é capturada, pois os dados são agregados por município.
+
+### Trabalhos Futuros
+
+1. **Modelos Sequenciais (LSTM / GRU)**: Capturar dinâmicas temporais de longo prazo na evolução dos indicadores educacionais.
+2. **Feature Engineering Avançada**: Incorporar dados do Censo Escolar (INEP), SIOPE (investimento público em educação) e PNAD Contínua (nível socioeconômico familiar).
+3. **Deploy via API REST**: Disponibilizar o modelo como serviço (`FastAPI` + Docker) para integração com painéis do MEC em tempo real.
+4. **Fairness Audit**: Avaliar viés do modelo em relação a raça/etnia e zona urbana/rural para garantir equidade nas recomendações de política pública.
+
+---
+
+## 10. Exemplo de Predição em Produção
+
+```python
+import joblib
+import pandas as pd
+
+# Carregar pipeline completa (preprocessor + modelo campeão)
+pipeline = joblib.load("models/best_model_pipeline.pkl")
+
+# Dados de um novo município (features disponíveis antes do resultado do ano t)
+novo_municipio = pd.DataFrame([{
+    "indicador_lag1": 52.3,        # Indicador de alfabetização em t-1
+    "indicador_lag2": 48.7,        # Indicador de alfabetização em t-2
+    "tendencia_historica": 3.6,    # Variação: lag1 - lag2
+    "gap_historico_vs_meta_municipio": -5.2,  # Gap em relação à meta municipal
+    "gap_historico_vs_meta_nacional": -8.1,   # Gap em relação à meta nacional
+    "meta_municipio": 57.5,        # Meta pactuada para o ano t
+    "meta_nacional": 60.0,         # Meta nacional para o ano t
+    "quantidade_matriculas": 1200, # Matrículas na rede municipal
+    "PIB_per_capita": 18500.0,     # PIB per capita (R$)
+    "IDHM": 0.612,                 # Índice de Desenvolvimento Humano
+    "sigla_uf": "MA",              # Unidade Federativa
+    "regiao": "Nordeste",          # Grande Região
+}])
+
+# Gerar predição
+proba = pipeline.predict_proba(novo_municipio)[0]
+risco = 1 - proba[1]  # P(Risco) = 1 - P(Meta Atingida)
+
+print(f"Probabilidade de Meta Atingida: {proba[1]:.2%}")
+print(f"Probabilidade de Risco:         {risco:.2%}")
+print(f"Classificação: {'⚠️ RISCO' if risco >= 0.40 else '✅ Meta Provável'}")
+```
+
+---
+
+## 11. Como Reproduzir o Projeto
 
 ```bash
 # 1. Ativar o ambiente virtual

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
+from matplotlib.gridspec import GridSpec
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -125,9 +126,10 @@ def evaluate_and_explain(sample_size: int = 2000):
     print("🎨 Gerando SHAP Dependence Plot...")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
     
-    # Índice da feature indicador_lag1 (0) e IDHM (9)
-    idx_lag1 = 0
-    idx_idhm = 9
+    # Índice dinâmico das features (robusto a reordenação)
+    feature_list = feature_names.tolist()
+    idx_lag1 = feature_list.index("indicador_lag1")
+    idx_idhm = feature_list.index("IDHM")
 
     # Scatter manual de dependência com cor por IDHM
     scatter1 = ax1.scatter(
@@ -230,7 +232,78 @@ def evaluate_and_explain(sample_size: int = 2000):
     print("=" * 75)
     print(df_importance[["Feature", "Mean_Abs_SHAP"]].head(10).to_markdown(index=False))
 
+    # 6. Coeficientes do Modelo Campeão (Regressão Logística) — Triangulação
+    best_model_path = MODELS_DIR / "best_model_pipeline.pkl"
+    if best_model_path.exists():
+        best_clf = joblib.load(best_model_path)
+        best_estimator = best_clf.named_steps["classifier"]
+        if hasattr(best_estimator, "coef_"):
+            print("\n🔬 Gerando Triangulação: Coeficientes Logísticos vs SHAP...")
+            plot_logistic_coefficients(best_clf, feature_names, feature_names_clean)
+
     return df_importance
+
+
+def plot_logistic_coefficients(
+    pipeline,
+    feature_names: np.ndarray,
+    feature_names_clean: np.ndarray,
+    output_name: str = "10_logistic_coefficients.png",
+):
+    """
+    Extrai e plota os coeficientes padronizados da Regressão Logística campeã,
+    permitindo triangulação com os SHAP Values do Random Forest.
+    Coeficientes positivos indicam associação com Meta Atingida (Classe 1).
+    Coeficientes negativos indicam associação com Risco (Classe 0).
+    """
+    estimator = pipeline.named_steps["classifier"]
+    coefs = estimator.coef_[0]
+
+    # Alinhar coeficientes com nomes de features
+    n_features = min(len(coefs), len(feature_names_clean))
+    df_coef = pd.DataFrame({
+        "Feature": feature_names_clean[:n_features],
+        "Nome_Original": feature_names[:n_features],
+        "Coeficiente": coefs[:n_features],
+        "Abs_Coef": np.abs(coefs[:n_features]),
+    }).sort_values("Abs_Coef", ascending=False)
+
+    top_n = min(12, len(df_coef))
+    df_top = df_coef.head(top_n).sort_values("Coeficiente")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    colors = ["#2ecc71" if c > 0 else "#e74c3c" for c in df_top["Coeficiente"]]
+    ax.barh(df_top["Feature"], df_top["Coeficiente"], color=colors, edgecolor="black", linewidth=0.8)
+    ax.axvline(0, color="black", linestyle="--", alpha=0.7)
+    ax.set_xlabel("Coeficiente Padronizado (Impacto no Log-Odds de Meta Atingida)", fontweight="bold")
+    ax.set_title(
+        "Coeficientes da Regressão Logística Campeã (Triangulação com SHAP)",
+        fontsize=13, fontweight="bold", pad=15
+    )
+
+    # Legenda de interpretação
+    ax.text(
+        0.98, 0.02,
+        "[+] Positivo (Protege Meta)  |  [-] Negativo (Aumenta Risco)",
+        transform=ax.transAxes, fontsize=9, ha="right", va="bottom",
+        bbox=dict(boxstyle="round,pad=0.4", fc="lightyellow", ec="gray", alpha=0.9)
+    )
+
+    plt.tight_layout()
+    coef_path = IMAGES_DIR / output_name
+    plt.savefig(coef_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"   ✅ Salvo: {coef_path.name}")
+
+    # Salvar tabela de coeficientes
+    coef_csv_path = REPORTS_DIR / "logistic_coefficients.csv"
+    df_coef.to_csv(coef_csv_path, index=False)
+    print(f"💾 Tabela de coeficientes salva em: {coef_csv_path}")
+
+    print("\n" + "=" * 75)
+    print("🔬 TRIANGULAÇÃO: TOP 10 COEFICIENTES LOGÍSTICOS vs SHAP:")
+    print("=" * 75)
+    print(df_coef[["Feature", "Coeficiente", "Abs_Coef"]].head(10).to_markdown(index=False))
 
 
 if __name__ == "__main__":
