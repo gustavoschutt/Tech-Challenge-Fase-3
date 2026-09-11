@@ -11,7 +11,11 @@ import sys
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+    VotingClassifier,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -137,10 +141,24 @@ def train_and_compare_models():
     best_hgb = grid_hgb.best_estimator_
     print(f"   ✅ HistGradientBoosting otimizado: {grid_hgb.best_params_} (CV Bal Acc: {grid_hgb.best_score_:.4f})")
 
+    # Modelo 4: Soft Voting Ensemble (Ensemble Calibrado por Votação Suave)
+    soft_voting = VotingClassifier(
+        estimators=[
+            ("hgb", best_hgb),
+            ("rf", best_rf),
+            ("logreg", best_logreg),
+        ],
+        voting="soft",
+        weights=[0.5, 0.3, 0.2],
+    )
+    soft_voting.fit(X_train, y_train)
+    print("   ✅ Soft Voting Ensemble (HGB + RF + LogReg) calibrado.")
+
     candidate_models = {
         "Regressão Logística (Baseline)": best_logreg,
         "Random Forest Classifier (Otimizado)": best_rf,
         "HistGradientBoosting Classifier (Otimizado)": best_hgb,
+        "Soft Voting Ensemble (HGB + RF + LogReg)": soft_voting,
     }
 
     # 5. Avaliação Comparativa no Holdout de Teste Temporal (Ano 2024)

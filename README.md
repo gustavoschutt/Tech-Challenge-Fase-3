@@ -5,10 +5,14 @@
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5.0-orange.svg)](https://scikit-learn.org/)
 [![SHAP](https://img.shields.io/badge/SHAP-XAI-green.svg)](https://shap.readthedocs.io/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg?logo=fastapi)](src/api/app.py)
+[![Vídeo da Apresentação](https://img.shields.io/badge/Vídeo-Apresentação%20Executiva-red?logo=youtube)](https://youtu.be/eSx4qhS8X50)
 
 ---
 
 ## 1. Contexto do Problema e Objetivo de Negócio
+
+> 🎬 **Vídeo Executivo (Até 5 minutos):** [Clique aqui para assistir à apresentação executiva da solução para a banca examinadora](https://youtu.be/eSx4qhS8X50).
 
 A alfabetização plena até o final do 2º ano do ensino fundamental é a meta central do **Compromisso Nacional Criança Alfabetizada**, visando assegurar que 100% das crianças brasileiras atinjam o patamar de proficiência estabelecido pelo INEP (**743 pontos na escala SAEB**) até **2030**.
 
@@ -65,21 +69,23 @@ O pré-processamento foi estruturado de forma modular e integrada via `ColumnTra
 
 ## 4. Comparação de Modelos, Otimização e Resultados
 
-Para lidar com o desbalanceamento intrínseco de classes (**$93.63\%$ Meta Atingida vs $6.37\%$ Em Risco no ano 2024**), os modelos foram configurados com balanceamento de pesos (`class_weight='balanced'`) e otimizados via `GridSearchCV` orientado a **Balanced Accuracy** e **ROC-AUC**:
+A partir da Camada Gold recalculada pela regra documentada, a distribuição no ano de teste (2024) resulta em **$46.79\%$ Meta Atingida (2.606 municípios)** vs **$53.21\%$ Em Risco (2.964 municípios)**. Os modelos foram otimizados via `GridSearchCV` orientado a **Balanced Accuracy** e **ROC-AUC** sob partição temporal estrita:
 
 | Modelo | CV Bal Acc (Média ± DP) | CV ROC-AUC | Teste Balanced Acc | Teste ROC-AUC | Teste Recall Risco (Classe 0) | Teste Recall Sucesso (Classe 1) | Teste Precision Risco | Teste F1 Macro | Teste Acurácia Global |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Regressão Logística (Baseline)** | **$0.9221 \pm 0.0022$** | **$0.9730$** | **$0.9451$** | **$0.9827$** | **$95.21\%$** | **$93.81\%$** | **$51.13\%$** | **$0.8159$** | **$93.90\%$** |
-| **Random Forest (Otimizado)** | $0.9196 \pm 0.0062$ | $0.9711$ | $0.9449$ | $0.9809$ | **$96.06\%$** | $92.92\%$ | $48.03\%$ | $0.8012$ | $93.12\%$ |
-| **HistGradientBoosting (Otimizado)** | $0.9149 \pm 0.0092$ | $0.9717$ | $0.9324$ | $0.9811$ | $92.96\%$ | $93.52\%$ | $49.40\%$ | $0.8046$ | $93.48\%$ |
+| **HistGradientBoosting (🏆)** | **$0.7883 \pm 0.0088$** | $0.8733$ | **$0.8397$** | **$0.9271$** | **$85.12\%$** | $82.81\%$ | **$84.92\%$** | **$0.8397$** | **$84.04\%$** |
+| **Regressão Logística (Baseline)** | $0.7879 \pm 0.0092$ | **$0.8764$** | $0.8377$ | **$0.9287$** | $84.62\%$ | **$82.92\%$** | **$84.93\%$** | $0.8376$ | $83.82\%$ |
+| **Soft Voting Ensemble (HGB+RF+LR)** | $0.7880 \pm 0.0097$ | $0.8748$ | $0.8367$ | **$0.9272$** | $85.46\%$ | $81.89\%$ | $84.29\%$ | $0.8370$ | $83.79\%$ |
+| **Random Forest (Otimizado)** | $0.7866 \pm 0.0094$ | $0.8670$ | $0.8365$ | $0.9163$ | **$86.67\%$** | $80.62\%$ | $83.57\%$ | $0.8373$ | $83.84\%$ |
 
 ![Curvas ROC Comparativas](images/04_roc_curves_comparison.png)
 ![Matriz de Confusão](images/05_confusion_matrix.png)
 ![Calibração de Threshold](images/08_threshold_tuning.png)
 
 ### Destaques da Avaliação Técnica:
-1. **Recall Superior a 95% para Detecção de Risco**: O modelo identifica corretamente **$95.21\%$ a $96.06\%$ dos municípios que de fato não atingiram a meta em 2024**, errando apenas uma fração mínima de falsos seguros.
-2. **Seleção Dinâmica Baseada em Evidência**: A **Regressão Logística Otimizada** foi selecionada como modelo campeão por apresentar o maior `Balanced Accuracy` ($0.9451$) e `ROC-AUC` ($0.9827$) no holdout temporal, sendo acompanhada pelo **Random Forest Otimizado** ($0.9449$) para interpretabilidade não-linear via SHAP.
+1. **Sensibilidade Superior a 85% para Detecção de Risco**: O modelo campeão (**HistGradientBoosting Classifier Otimizado**) identifica corretamente **$85.12\%$ dos municípios em risco em 2024** (capturando 2.523 dos 2.964 municípios que falharam), mantendo alta precisão ($84.92\%$) e ROC-AUC de $0.9271$.
+2. **Seleção Dinâmica Baseada em Evidência**: O **HistGradientBoosting** liderou em `Balanced Accuracy` ($0.8397$) e `Acurácia Global` ($0.8404$), demonstrando forte capacidade de generalização no holdout cego, enquanto a **Regressão Logística Baseline** comprovou solidez com o maior ROC-AUC ($0.9287$) e o **Random Forest** viabilizou a decomposição interpretabilidade via SHAP.
+3. **Estudo Comparativo com Ensemble Suave**: Implementou-se um *Soft Voting Classifier* ponderado combinando HistGradientBoosting, Random Forest e Regressão Logística, que atingiu $0.9272$ de ROC-AUC e $85.46\%$ de Recall de risco, confirmando robustez inter-modelos.
 
 ---
 
@@ -92,55 +98,50 @@ Utilizando o `TreeExplainer` no modelo de ensemble de árvores otimizado, realiz
 ![SHAP Dependence Plot](images/08_shap_dependence_plot.png)
 ![SHAP Local Waterfall](images/09_shap_local_waterfall.png)
 
-### Triangulação com Coeficientes da Regressão Logística Campeã
-
-Para complementar os SHAP Values (calculados sobre o ensemble de árvores), extraímos e plotamos os **coeficientes padronizados da Regressão Logística** — o modelo efetivamente selecionado como campeão. A convergência entre ambas as métricas confirma a robustez da interpretação:
+### Triangulação com Coeficientes da Regressão Logística
+Para validar a consistência das importâncias decisórias, extraímos os coeficientes padronizados da Regressão Logística baseline, observando convergência direta com os valores SHAP do ensemble:
 
 ![Coeficientes Logísticos](images/10_logistic_coefficients.png)
 
-### Ranking dos Fatores Determinantes (Top 10):
+### Ranking dos Fatores Determinantes (Top 10 via SHAP):
 
 | Ranking | Variável | Importância Média ($\text{Mean } \|\text{SHAP}\|$) | Impacto na Alfabetização |
 |:---:|---|:---:|---|
-| **1º** | **Indicador Ano Anterior ($t-1$)** | **$0.1739$** | **Fortemente Positivo**: Nível prévio de alfabetização é a âncora principal. |
-| **2º** | **Gap vs Meta Nacional** | **$0.1152$** | **Positivo**: Proximidade com o patamar nacional reduz drasticamente a probabilidade de risco. |
-| **3º** | **Meta Municipal Pactuada** | **$0.0793$** | **Condicional**: Metas descoladas da capacidade real aumentam a vulnerabilidade. |
-| **4º** | **Índice de Desenv. Humano (IDHM)** | **$0.0445$** | **Positivo / Não-Linear**: Patamares de IDHM $> 0.65$ protegem contra quedas de aprendizado. |
-| **5º** | **Gap vs Meta Municipal** | **$0.0260$** | **Positivo**: Margem de segurança frente à meta pactuada localmente. |
-| **6º** | **Indicador Há 2 Anos ($t-2$)** | **$0.0259$** | **Positivo**: Consistência histórica plurianual. |
-| **7º** | **Tendência Histórica** | **$0.0232$** | **Positivo**: Velocidade de aceleração ($\Delta > 0$) atenua históricos desfavoráveis. |
-| **8º** | **Meta Nacional Brasil** | **$0.0090$** | **Contextual**: Nível de exigência do ciclo avaliativo federal. |
-| **9º** | **PIB per capita Municipal** | **$0.0036$** | **Positivo**: Margem fiscal para investimentos complementares na educação básica. |
-| **10º** | **Volume de Matrículas** | **$0.0035$** | **Contextual**: Redes de grande porte enfrentam maior dispersão de proficiência. |
+| **1º** | **Gap vs Meta Municipal** | **$0.1803$** | **Fortemente Determinante**: Distância prévia do indicador à meta pactuada. |
+| **2º** | **Tendência Histórica ($\Delta$)** | **$0.0517$** | **Positivo**: Velocidade de aceleração do aprendizado nos ciclos anteriores. |
+| **3º** | **Indicador Ano Anterior ($t-1$)** | **$0.0260$** | **Positivo**: Patamar basal de proficiência da rede escolar. |
+| **4º** | **Gap vs Meta Nacional** | **$0.0260$** | **Positivo**: Proximidade com o padrão federal de 743 pontos SAEB. |
+| **5º** | **Meta Municipal Pactuada** | **$0.0216$** | **Condicional**: Grau de exigência e ambição fixado pela secretaria municipal. |
+| **6º** | **Indicador Há 2 Anos ($t-2$)** | **$0.0082$** | **Positivo**: Inércia e consistência plurianual. |
+| **7º** | **Índice de Desenv. Humano (IDHM)** | **$0.0066$** | **Estrutural**: Níveis elevados de IDHM atuam como fator de blindagem pedagógica. |
+| **8º** | **Volume de Matrículas** | **$0.0046$** | **Contextual**: Redes de grande porte enfrentam maior dispersão de proficiência. |
+| **9º** | **Meta Nacional Brasil** | **$0.0027$** | **Contextual**: Nível de exigência do ciclo avaliativo federal. |
+| **10º** | **PIB per capita Municipal** | **$0.0015$** | **Contextual**: Capacidade de autofinanciamento da rede básica. |
 
 ---
 
 ## 6. Respostas às 5 Perguntas Estratégicas de Negócio
 
 ### 1. Quais fatores mais impactam a alfabetização?
-A inércia histórica da rede (`indicador_lag1` e `lag2`), associada ao **Índice de Desenvolvimento Humano (IDHM)** e à distância para as metas oficiais (`gap_vs_meta`), são os fatores preponderantes. O SHAP Dependence Plot comprova que municípios com IDHM inferior a $0.60$ necessitam de esforços pedagógicos significativamente maiores para sustentar taxas positivas de alfabetização.
+A distância prévia do município para a sua meta pactuada (`gap_historico_vs_meta_municipio`) e a velocidade de aceleração recente (`tendencia_historica`), seguidas pelo nível consolidado no ano anterior (`indicador_lag1`) e o **IDHM**, são os principais motores preditivos.
 
 ### 2. Quais municípios apresentam maior risco educacional?
-Municípios situados no **Quadrante Crítico** (indicador histórico $< 50\%$ e tendência de variação negativa $\Delta < 0$). No ano de 2024, identificamos **$355$ municípios em situação de risco efetivo ($6.37\%$)**, para os quais o modelo gerou alerta com mais de **$95\%$ de sensibilidade (recall)**.
+Municípios com defasagem histórica acentuada frente às metas e tendência negativa de crescimento ($\Delta < 0$). Em 2024, identificamos **$2.964$ municípios em risco efetivo ($53.21\%$)**, para os quais o modelo gerou alerta tempestivo com sensibilidade superior a **$85\%$**.
 
 ![Quadrante de Risco Educacional](images/06_risk_quadrant.png)
 
 ### 3. Quais regiões possuem padrões semelhantes?
-Além da análise geográfica tradicional (onde Sul e Sudeste atingem taxas superiores a $94\%$ e Norte/Nordeste enfrentam maior dispersão), aplicamos **Clustering Não-Supervisionado (K-Means, $k=4$)** para agrupar municípios por características estruturais:
-* **Cluster 0 (Consolidado)**: Alto IDHM ($> 0.73$), alta proficiência histórica e baixo risco de descontinuidade.
-* **Cluster 1 (Vulnerabilidade Crítica)**: Baixo IDHM ($< 0.58$), histórico $< 45\%$ e necessidade de socorro pedagógico federal urgente.
-* **Cluster 2 (Em Aceleração)**: Histórico médio com forte tendência de crescimento ($\Delta > +5\text{ p.p.}$).
-* **Cluster 3 (Nível Médio com Dispersão)**: Municípios de médio porte com oscilação entre ciclos.
+Além da análise geográfica (onde Centro-Oeste alcança $52.8\%$ de metas atingidas e o Nordeste e Sudeste situam-se próximos a $50\%$), a clusterização não-supervisionada (**K-Means, $k=4$**) isola perfis estruturais de municípios com alta vulnerabilidade vs redes aceleradas:
 
 ![Agrupamento Não-Supervisionado](images/09_unsupervised_clusters.png)
 
 ### 4. Como prever municípios em risco de não atingir metas futuras?
-Aplicando a função de probabilidade do modelo:
+Aplicando a função de probabilidade preditiva:
 $$\hat{P}(\text{Risco}) = 1 - \hat{P}(\text{Meta Atingida} = 1 \mid \mathbf{x}_{t-1})$$
-A calibração da curva Precision-Recall demonstra que o limiar ótimo para F1 é **$0.75$**, enquanto a adoção do **limiar conservador de $\hat{P}(\text{Risco}) \ge 0.40$** assegura captura de mais de **$95\%$ dos municípios em risco**, viabilizando ações preventivas antes do encerramento do ciclo letivo.
+A calibração do threshold estabelece o ponto de equilíbrio ótimo em **$0.42$** (alcançando **F1 de $0.8557$**), permitindo triagem priorizada para envio de apoio técnico antes do encerramento do ano letivo.
 
 ### 5. Quais variáveis possuem maior influência nos modelos?
-O quarteto formado por `indicador_lag1`, `gap_historico_vs_meta_nacional`, `meta_municipio` e `IDHM` concentra **mais de $82\%$ da importância decisória** do modelo.
+O bloco formado por `gap_historico_vs_meta_municipio`, `tendencia_historica` e `indicador_lag1` concentra a grande maioria do peso decisório de predição do modelo.
 
 ---
 
@@ -149,6 +150,26 @@ O quarteto formado por `indicador_lag1`, `gap_historico_vs_meta_nacional`, `meta
 1. **Alocação de Recursos Técnicos Baseada em Evidência**: Priorização de repasses discricionários e apoio pedagógico do MEC para os municípios com escore de risco elevado.
 2. **Formação Continuada de Professores**: Envio de equipes de mentoria pedagógica para redes com histórico de tendência negativa ($\text{tendência} < 0$).
 3. **Calibragem de Metas Municipais**: Uso do modelo para verificar se a meta pactuada pelo município é realista frente ao seu IDHM e taxa de crescimento histórico, evitando metas inatingíveis que desmotivam o corpo docente.
+
+### 7.1. Auditoria de Equidade e Viés Algorítmico (Fairness Audit)
+
+Em consonância com as melhores práticas de IA Responsável e Governança Pública, foi realizada uma auditoria de equidade fatiada (*slice-based fairness audit*) avaliando se o modelo campeão apresenta disparidades territoriais ou socioeconômicas no ano de teste (2024):
+
+| Dimensão | Grupo | Municípios | Balanced Acc | ROC-AUC | Recall Risco (Classe 0) | Precision Risco | Taxa Sucesso Real | Taxa Sucesso Predita |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Região** | **Centro-Oeste** | 824 | 0.8490 | 0.9316 | **83.68%** | 87.08% | 47.21% | 49.27% |
+| **Região** | **Nordeste** | 1.855 | 0.8418 | 0.9308 | **85.56%** | 85.81% | 45.12% | 45.28% |
+| **Região** | **Norte** | 1.449 | 0.8452 | 0.9242 | **85.87%** | 84.04% | 49.21% | 48.10% |
+| **Região** | **Sudeste** | 824 | 0.8159 | 0.9134 | **82.59%** | 83.52% | 45.63% | 46.24% |
+| **Região** | **Sul** | 618 | 0.8394 | 0.9348 | **87.46%** | 83.38% | 47.09% | 44.50% |
+| **IDHM** | **Baixo IDHM** | 1.893 | 0.8524 | 0.9360 | **87.90%** | 84.74% | 47.60% | 45.64% |
+| **IDHM** | **Médio IDHM** | 1.845 | 0.8363 | 0.9282 | **85.28%** | 84.42% | 46.61% | 46.07% |
+| **IDHM** | **Alto IDHM** | 1.832 | 0.8304 | 0.9165 | **82.17%** | 85.64% | 46.12% | 48.31% |
+| **Nacional** | **Brasil (Global)** | **5.570** | **0.8397** | **0.9271** | **85.12%** | **84.92%** | **46.79%** | **46.66%** |
+
+![Auditoria de Equidade](images/11_fairness_regional_audit.png)
+
+> **Conclusão de Equidade:** O modelo mantém sensibilidade (*Recall de Risco*) equilibrada entre **82.59% e 87.46%** em todas as 5 macrorregiões. Especialmente nas cidades de menor IDHM, a taxa de captura de risco atinge **87.90%**, garantindo que municípios vulneráveis não fiquem invisíveis ao radar de intervenção preventiva do MEC.
 
 ---
 
@@ -160,9 +181,18 @@ tech-challenge-fase3/
 │   ├── ml_features.parquet                   # Base Gold oficial sem data leakage
 │   ├── indicador_municipio.parquet           # Base completa por município
 │   ├── evolucao_uf.parquet                   # Painel agregado por UF
-│   └── painel_nacional.parquet               # Consolidado Brasil
+│   ├── painel_nacional.parquet               # Consolidado Brasil
+│   └── manifest.json                         # Manifesto de integridade e SHA-256
+├── docs/
+│   └── data_lineage.md                       # Dossiê de linhagem de dados e proveniência
 ├── src/
 │   ├── __init__.py
+│   ├── api/
+│   │   ├── __init__.py                       # Exportações da API REST
+│   │   └── app.py                            # Endpoints FastAPI (/predict, /batch-predict, /health)
+│   ├── data_pipeline/
+│   │   ├── __init__.py
+│   │   └── build_gold.py                     # Construtor determinístico da Camada Gold
 │   ├── preprocessing/
 │   │   ├── __init__.py                       # Exportações do pacote de pré-processamento
 │   │   └── pipeline.py                       # ColumnTransformer & Partição Temporal
@@ -171,7 +201,8 @@ tech-challenge-fase3/
 │   │   └── train.py                          # GridSearchCV, StratifiedGroupKFold e Holdout 2024
 │   ├── evaluation/
 │   │   ├── __init__.py                       # Exportações do pacote de avaliação
-│   │   └── shap_analysis.py                  # XAI (Beeswarm, Bar, Dependence e Waterfall)
+│   │   ├── shap_analysis.py                  # XAI (Beeswarm, Bar, Dependence e Waterfall)
+│   │   └── fairness_audit.py                 # Auditoria de equidade regional e por IDHM
 │   └── visualization/
 │       ├── __init__.py                       # Exportações do pacote de visualização
 │       └── plots.py                          # Visualizações em 300 DPI com caminhos relativos
@@ -180,7 +211,7 @@ tech-challenge-fase3/
 │   ├── 01_eda.py                             # Script Python sincronizado da EDA
 │   └── 01_eda.html                           # Exportação HTML navegável
 ├── models/
-│   ├── best_model_pipeline.pkl               # Modelo campeão (Regressão Logística Otimizada)
+│   ├── best_model_pipeline.pkl               # Modelo campeão (HistGradientBoosting Otimizado)
 │   ├── rf_pipeline.pkl                       # Modelo Random Forest Otimizado
 │   ├── train_test_data.pkl                   # Partição temporal treino/teste
 │   └── model_comparison_metrics.csv          # Tabela de métricas consolidadas
@@ -197,12 +228,24 @@ tech-challenge-fase3/
 │   ├── 08_threshold_tuning.png
 │   ├── 09_shap_local_waterfall.png
 │   ├── 09_unsupervised_clusters.png
-│   └── 10_logistic_coefficients.png
+│   ├── 10_logistic_coefficients.png
+│   └── 11_fairness_regional_audit.png
 ├── reports/
 │   ├── shap_feature_importance.csv           # Ranking de importância SHAP
-│   └── logistic_coefficients.csv             # Coeficientes padronizados do modelo campeão
+│   ├── logistic_coefficients.csv             # Coeficientes padronizados do modelo campeão
+│   └── fairness_audit.csv                    # Relatório de equidade regional e IDHM
+├── tests/
+│   ├── conftest.py                           # Fixtures de teste
+│   ├── test_build_gold.py                    # Testes de linhagem e contratos da Gold
+│   ├── test_preprocessing.py                 # Testes de blindagem contra leakage
+│   ├── test_fairness.py                      # Testes de cálculo de métricas de fairness
+│   └── test_api.py                           # Testes de integração da API REST
+├── pytest.ini                                # Configuração nativa de execução de testes
+├── .flake8                                   # Configuração de linter e conformidade PEP 8
 ├── requirements.txt                          # Dependências com versões fixas
 ├── LICENSE                                   # Licença MIT
+├── Slides_Apresentacao_Fase3.html            # Apresentação executiva interativa (HTML)
+├── Slides_Apresentacao_Fase3.pdf             # Apresentação executiva estática (PDF em 16:9)
 └── README.md                                 # Documentação executiva completa
 ```
 
@@ -217,16 +260,18 @@ tech-challenge-fase3/
 3. **Premissa de Estacionariedade**: O modelo assume que as relações entre features e target permanecem relativamente estáveis ao longo do tempo. Choques exógenos (ex: pandemia, mudanças curriculares abruptas) podem requerer recalibração.
 4. **Granularidade Municipal**: Heterogeneidade intra-municipal (ex: zonas rural vs urbana) não é capturada, pois os dados são agregados por município.
 
-### Trabalhos Futuros
+### Trabalhos Futuros e Evoluções Implementadas
 
 1. **Modelos Sequenciais (LSTM / GRU)**: Capturar dinâmicas temporais de longo prazo na evolução dos indicadores educacionais.
 2. **Feature Engineering Avançada**: Incorporar dados do Censo Escolar (INEP), SIOPE (investimento público em educação) e PNAD Contínua (nível socioeconômico familiar).
-3. **Deploy via API REST**: Disponibilizar o modelo como serviço (`FastAPI` + Docker) para integração com painéis do MEC em tempo real.
-4. **Fairness Audit**: Avaliar viés do modelo em relação a raça/etnia e zona urbana/rural para garantir equidade nas recomendações de política pública.
+3. **Deploy via API REST (✅ Implementado)**: API REST desenvolvida em `src/api/app.py` com FastAPI, pronta para servir predições para painéis do MEC.
+4. **Fairness Audit (✅ Implementado)**: Avaliação de equidade concluída em `src/evaluation/fairness_audit.py`, comprovando ausência de disparidade regional.
 
 ---
 
 ## 10. Exemplo de Predição em Produção
+
+### Opção A: Via Python / Joblib
 
 ```python
 import joblib
@@ -257,7 +302,61 @@ risco = 1 - proba[1]  # P(Risco) = 1 - P(Meta Atingida)
 
 print(f"Probabilidade de Meta Atingida: {proba[1]:.2%}")
 print(f"Probabilidade de Risco:         {risco:.2%}")
-print(f"Classificação: {'⚠️ RISCO' if risco >= 0.40 else '✅ Meta Provável'}")
+print(f"Classificação: {'⚠️ RISCO' if risco >= 0.42 else '✅ Meta Provável'}")
+```
+
+### Opção B: Via API REST (FastAPI)
+
+```bash
+# Iniciar servidor da API
+uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
+
+# Fazer predição via cURL
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "indicador_lag1": 42.5,
+    "indicador_lag2": 45.0,
+    "meta_municipio": 58.0,
+    "meta_nacional": 60.0,
+    "quantidade_matriculas": 1200,
+    "PIB_per_capita": 15000.0,
+    "IDHM": 0.590,
+    "sigla_uf": "MA",
+    "regiao": "Nordeste"
+  }'
+```
+
+Resposta JSON retornada (incluindo Explicabilidade Local XAI via SHAP):
+```json
+{
+  "probabilidade_meta_atingida": 0.1245,
+  "probabilidade_risco": 0.8755,
+  "classificacao": "CRÍTICO: RISCO IMINENTE",
+  "escore_risco_percentual": "87.6%",
+  "alerta_prioridade": "🔴 ALTA PRIORIDADE",
+  "recomendacao_politica_publica": "Envio imediato de apoio pedagógico presencial do MEC e alocação suplementar de recursos FUNDEB.",
+  "fatores_determinantes_locais": [
+    {
+      "fator": "Distância em Relação à Meta Municipal",
+      "direcao": "AUMENTA_RISCO",
+      "impacto": "Empurra o município em direção ao risco de não atingimento da meta pactuada.",
+      "valor_shap": -0.1541
+    },
+    {
+      "fator": "Distância em Relação à Meta Brasil",
+      "direcao": "AUMENTA_RISCO",
+      "impacto": "Empurra o município em direção ao risco de não atingimento da meta pactuada.",
+      "valor_shap": -0.0816
+    },
+    {
+      "fator": "Tendência Histórica de Evolução",
+      "direcao": "AUMENTA_RISCO",
+      "impacto": "Empurra o município em direção ao risco de não atingimento da meta pactuada.",
+      "valor_shap": -0.0646
+    }
+  ]
+}
 ```
 
 ---
@@ -277,8 +376,17 @@ python src/modeling/train.py
 # 4. Gerar os gráficos de interpretabilidade SHAP
 python src/evaluation/shap_analysis.py
 
-# 5. Executar o notebook de EDA
+# 5. Executar a auditoria de equidade (Fairness Audit)
+python src/evaluation/fairness_audit.py
+
+# 6. Executar o notebook de EDA
 jupyter notebook notebooks/01_eda.ipynb
+
+# 7. Iniciar a API REST de inferência
+uvicorn src.api.app:app --reload
+
+# 8. Executar os testes automatizados
+pytest -v
 ```
 
 ---
@@ -316,9 +424,9 @@ code .
 - Abra o arquivo `src/modeling/train.py` e clique no botão **▶️ Play (Run Python File)** no canto superior direito (ou execute `python src/modeling/train.py` no terminal integrado).
 - O script executará o `GridSearchCV`, a validação temporal no Holdout de 2024 e gerará as métricas e modelos em `models/`.
 
-#### 3. Executar a Análise de Explicabilidade (XAI com SHAP):
-- Abra o arquivo `src/evaluation/shap_analysis.py` e clique no botão **▶️ Play**.
-- Serão gerados os gráficos de impacto global (Beeswarm), importância média, dependência não-linear, explicações locais e a triangulação com os coeficientes da Regressão Logística.
+#### 3. Executar a Análise de Explicabilidade (XAI com SHAP) e Fairness:
+- Abra `src/evaluation/shap_analysis.py` ou `src/evaluation/fairness_audit.py` e clique no botão **▶️ Play**.
+- Serão gerados os gráficos de impacto global (Beeswarm), importância média, dependência não-linear, explicações locais e a auditoria de equidade.
 
 #### 4. Executar o Notebook de Análise Exploratória (EDA):
 - Abra o arquivo `notebooks/01_eda.ipynb`.
@@ -327,4 +435,26 @@ code .
 #### 5. Visualizar a Apresentação Executiva Interativa:
 - Clique com o botão direito em `Slides_Apresentacao_Fase3.html` e selecione **Open with Default Browser** (ou abra diretamente no Google Chrome / Firefox).
 - Pressione **F11** para tela cheia e navegue com as setas `←` / `→` do teclado.
+
+---
+
+## 13. Pipeline de Origem da Camada Gold, Linhagem e Testes
+
+A transformação reproduzível da camada Silver municipal para a camada Gold está implementada em `src/data_pipeline/build_gold.py`. Ela valida o contrato dos dados, recalcula o alvo pela regra formal de negócio (`indicador_alfabetizacao >= meta_municipio`), cria features exclusivamente defasadas e produz as tabelas analíticas em CSV e Parquet.
+
+Consulte a documentação completa de governança e rastreabilidade em [docs/data_lineage.md](docs/data_lineage.md).
+
+```bash
+# Reconstrução da Camada Gold
+python -m src.data_pipeline.build_gold \
+  --input data/indicador_municipio.csv \
+  --output-dir data \
+  --source-uri "Base dos Dados - Camada Silver Consolidada (GCS/BigQuery)"
+
+# Execução da suíte de testes automatizados (15 testes passando)
+pytest -v
+```
+
+Cada execução gera `manifest.json` com SHA-256 e contagens de entrada e saída, garantindo reprodutibilidade ponta a ponta.
+
 

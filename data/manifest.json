@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.1.0",
+  "source_uri": "Base dos Dados - Camada Silver Consolidada (GCS/BigQuery)",
+  "input_file": "/home/gusvato/Documentos/FIAP_postech/Fase_3/Tech-Challenge-VersaoFinal/data/indicador_municipio.csv",
+  "input_sha256": "ef6d7d23fd30c97097c2a88ff2b2f821f50912eda61f81688e7ac75e6b18f187",
+  "input_rows": 22280,
+  "outputs": {
+    "ml_features": 16710,
+    "evolucao_uf": 108,
+    "painel_nacional": 4
+  },
+  "target_rule": "indicador_alfabetizacao >= meta_municipio",
+  "contract_validation": {
+    "required_columns_count": 13,
+    "ml_feature_columns_count": 19,
+    "status": "VALIDATED"
+  }
+}
