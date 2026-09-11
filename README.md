@@ -6,13 +6,13 @@
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5.0-orange.svg)](https://scikit-learn.org/)
 [![SHAP](https://img.shields.io/badge/SHAP-XAI-green.svg)](https://shap.readthedocs.io/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg?logo=fastapi)](src/api/app.py)
-[![Vídeo da Apresentação](https://img.shields.io/badge/Vídeo-Apresentação%20Executiva-red?logo=youtube)](https://youtu.be/eSx4qhS8X50)
+[![Vídeo da Apresentação](https://img.shields.io/badge/Vídeo-Apresentação%20Executiva-red?logo=youtube)](https://youtu.be/0kR4zxVEct8)
 
 ---
 
 ## 1. Contexto do Problema e Objetivo de Negócio
 
-> 🎬 **Vídeo Executivo (Até 5 minutos):** [Clique aqui para assistir à apresentação executiva da solução para a banca examinadora](https://youtu.be/eSx4qhS8X50).
+> 🎬 **Vídeo Executivo (Até 5 minutos):** [Clique aqui para assistir à apresentação executiva da solução para a banca examinadora](https://youtu.be/0kR4zxVEct8).
 
 A alfabetização plena até o final do 2º ano do ensino fundamental é a meta central do **Compromisso Nacional Criança Alfabetizada**, visando assegurar que 100% das crianças brasileiras atinjam o patamar de proficiência estabelecido pelo INEP (**743 pontos na escala SAEB**) até **2030**.
 
